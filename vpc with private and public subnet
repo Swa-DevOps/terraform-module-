@@ -1,0 +1,50 @@
+provider "aws" {
+  region     = "ap-south-1"
+  access_key = "AKIAT7ATTQKZ3E2K5V55"
+  secret_key = "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"
+}
+#create vpc
+resource "aws_vpc" "myvpc" {
+  cidr_block = "10.0.0.0/16"
+  tags = {
+    Name = "terraform"
+  }
+}
+
+# create subnet public
+resource "aws_subnet" "publicSubnet" {
+    vpc_id = aws_vpc.myvpc.id
+    cidr_block = "10.0.1.0/24"
+  
+}
+
+# create private subnet
+resource "aws_subnet" "privateSubnet" {
+    vpc_id = aws_vpc.myvpc.id
+    cidr_block = "10.0.2.0/24"
+  
+}
+
+#create internet gateway
+resource "aws_internet_gateway" "igw" {
+    vpc_id = aws_vpc.myvpc.id
+ 
+  
+}
+
+#create route table
+resource "aws_route_table" "publicRT" {
+    vpc_id = aws_vpc.myvpc.id
+       route {
+        cidr_block = "0.0.0.0/0"
+        gateway_id = aws_internet_gateway.igw.id
+    }
+      
+}
+
+#route table association
+resource "aws_route_table_association" "publicRTassociation" {
+    subnet_id = aws_subnet.publicSubnet.id
+    route_table_id = aws_route_table.publicRT.id
+  
+}
