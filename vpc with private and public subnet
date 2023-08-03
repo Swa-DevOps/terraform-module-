@@ -13,38 +13,66 @@ resource "aws_vpc" "myvpc" {
 
 # create subnet public
 resource "aws_subnet" "publicSubnet" {
-    vpc_id = aws_vpc.myvpc.id
-    cidr_block = "10.0.1.0/24"
-  
+  vpc_id     = aws_vpc.myvpc.id
+  cidr_block = "10.0.1.0/24"
+
 }
 
 # create private subnet
 resource "aws_subnet" "privateSubnet" {
-    vpc_id = aws_vpc.myvpc.id
-    cidr_block = "10.0.2.0/24"
-  
+  vpc_id     = aws_vpc.myvpc.id
+  cidr_block = "10.0.2.0/24"
+
 }
 
 #create internet gateway
 resource "aws_internet_gateway" "igw" {
-    vpc_id = aws_vpc.myvpc.id
- 
-  
+  vpc_id = aws_vpc.myvpc.id
+
+
 }
 
 #create route table
 resource "aws_route_table" "publicRT" {
-    vpc_id = aws_vpc.myvpc.id
-       route {
-        cidr_block = "0.0.0.0/0"
-        gateway_id = aws_internet_gateway.igw.id
-    }
-      
+  vpc_id = aws_vpc.myvpc.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+
 }
 
 #route table association
 resource "aws_route_table_association" "publicRTassociation" {
-    subnet_id = aws_subnet.publicSubnet.id
-    route_table_id = aws_route_table.publicRT.id
-  
+  subnet_id      = aws_subnet.publicSubnet.id
+  route_table_id = aws_route_table.publicRT.id
+
+}
+
+#create elastic ip for nat
+resource "aws_eip" "eip" {
+  vpc = true
+}
+
+#create nat gateway
+resource "aws_nat_gateway" "nat_gw" {
+  allocation_id = aws_eip.eip.id
+  subnet_id     = aws_subnet.privateSubnet.id
+}
+
+#create route table for nat
+resource "aws_route_table" "privateRT" {
+  vpc_id = aws_vpc.myvpc.id
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_gw.id
+  }
+
+}
+
+#create route table associateion
+resource "aws_route_table_association" "privateRTassociation" {
+  subnet_id      = aws_subnet.privateSubnet.id
+  route_table_id = aws_route_table.privateRT.id
+
 }
